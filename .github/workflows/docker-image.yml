@@ -29,4 +29,6 @@ jobs:
         context: .
         file: ./Dockerfile
         push: true
-        tags: emqo/bugelll-unturned:latest
+        tags: |
+          emqo/bugelll-dst:latest
+          emqo/bugelll-dst:${{ github.sha }}
