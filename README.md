@@ -1,6 +1,6 @@
 # Bugelll-Unturned Docker
 
-[English](#english) | [中文](#chinese)
+[English](#english) | [中文](#中文)
 
 ## English
 
