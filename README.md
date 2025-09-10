@@ -26,7 +26,14 @@ cd Bugelll-Unturned
 docker build . -t bugelll-unturned
 ```
 
-3. Start the server using docker-compose:
+3. **IMPORTANT**: Set correct permissions for the data directory:
+```bash
+sudo mkdir -p ./unturned_data
+sudo chown -R 1000:1000 ./unturned_data
+```
+   *Note: 1000:1000 is the UID/GID of the steam user inside the container*
+
+4. Start the server using docker-compose:
 ```bash
 docker-compose up -d
 ```
@@ -79,7 +86,13 @@ chmod +x init.sh
 ### Volume Mounting
 The container supports full directory mounting for data persistence:
 - `./unturned_data:/home/steam/Unturned` - Game files and server data
-- The script automatically checks for empty directories and installs game files if needed
+
+**IMPORTANT**: Before mounting volumes, ensure the host directory has correct permissions:
+```bash
+sudo mkdir -p /path/to/your/data
+sudo chown -R 1000:1000 /path/to/your/data
+```
+*Note: The steam user inside the container has UID/GID 1000:1000. Incorrect permissions will cause installation failures.*
 
 ---
 
@@ -107,7 +120,14 @@ cd Bugelll-Unturned
 docker build . -t bugelll-unturned
 ```
 
-3. 使用docker-compose启动服务器：
+3. **重要**：为数据目录设置正确的权限：
+```bash
+sudo mkdir -p ./unturned_data
+sudo chown -R 1000:1000 ./unturned_data
+```
+   *注意：1000:1000 是容器内steam用户的UID/GID*
+
+4. 使用docker-compose启动服务器：
 ```bash
 docker-compose up -d
 ```
@@ -160,13 +180,28 @@ chmod +x init.sh
 ### 卷挂载
 容器支持完整目录挂载以实现数据持久化：
 - `./unturned_data:/home/steam/Unturned` - 游戏文件和服务器数据
-- 脚本会自动检查空目录并在需要时安装游戏文件
+
+**重要**：在挂载卷之前，确保主机目录具有正确的权限：
+```bash
+sudo mkdir -p /path/to/your/data
+sudo chown -R 1000:1000 /path/to/your/data
+```
+*注意：容器内的steam用户UID/GID为1000:1000。权限不正确将导致安装失败。*
 
 ### 故障排除
 - 确保Docker和docker-compose已正确安装
 - 检查端口27015和27016是否被占用
+- **权限问题**：确保挂载目录的所有者为1000:1000（容器内steam用户）
+  ```bash
+  sudo chown -R 1000:1000 /path/to/mount/directory
+  ```
 - 验证卷挂载路径的权限设置
 - 查看容器日志：`docker logs unturned-server`
+
+**常见问题**：
+- 如果游戏目录为空或安装失败，首先检查目录权限
+- 确保挂载目录存在且具有正确的所有者权限
+- 使用 `ls -la /path/to/directory` 检查权限
 
 ### 许可证
 本项目采用MIT许可证 - 详见 [LICENSE](LICENSE) 文件

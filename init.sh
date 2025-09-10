@@ -12,15 +12,6 @@ echo "[INFO] SteamCMD directory: $STEAMCMD_DIR"
 mkdir -p "$GAME_DIR"
 chown steam:steam "$GAME_DIR"
 
-# 检查是否使用了挂载目录
-if [ -d "$GAME_DIR" ] && [ "$(ls -A "$GAME_DIR" 2>/dev/null)" = "" ]; then
-    echo "[INFO] Detected empty mounted directory, will install game to mounted volume"
-    MOUNTED_DIR=true
-else
-    echo "[INFO] Game directory either not mounted or already contains files"
-    MOUNTED_DIR=false
-fi
-
 # 检查游戏是否已安装
 if [ ! -f "$GAME_DIR/Unturned_Headless.x86_64" ]; then
     echo "[INFO] Game not found, installing Unturned for the first time..."
@@ -28,97 +19,14 @@ if [ ! -f "$GAME_DIR/Unturned_Headless.x86_64" ]; then
     # 切换到SteamCMD目录
     cd "$STEAMCMD_DIR"
     
-    # 确保目录权限正确
-    chown -R steam:steam "$GAME_DIR"
-    chmod -R 755 "$GAME_DIR"
-    
-    # 如果是空挂载目录，先在临时位置安装游戏
-    if [ "$MOUNTED_DIR" = true ]; then
-        echo "[INFO] Empty mounted directory detected, installing to temporary location first"
-        TEMP_GAME_DIR="/tmp/unturned_temp"
-        mkdir -p "$TEMP_GAME_DIR"
-        chown steam:steam "$TEMP_GAME_DIR"
-        
-        # 首次安装游戏到临时目录
-        echo "[INFO] Installing Unturned (App ID: $GAME_ID) to temporary location: $TEMP_GAME_DIR"
-        echo "[INFO] Current user: $(whoami)"
-        echo "[INFO] Current directory: $(pwd)"
-        
-        # 检查SteamCMD是否可用
-        if [ ! -f "./steamcmd.sh" ]; then
-            echo "[ERROR] steamcmd.sh not found in $STEAMCMD_DIR"
-            exit 1
-        fi
-        
-        # 运行SteamCMD安装到临时目录
-        if ! ./steamcmd.sh \
-            +force_install_dir "$TEMP_GAME_DIR" \
-            +login anonymous \
-            +app_update $GAME_ID validate \
-            +quit; then
-            echo "[ERROR] SteamCMD installation failed"
-            exit 1
-        fi
-        
-        echo "[INFO] SteamCMD installation to temporary location completed"
-        
-        # 检查临时目录中的安装结果
-        echo "[INFO] Temporary game directory contents:"
-        ls -la "$TEMP_GAME_DIR"
-        
-        # 检查关键文件是否存在
-        if [ ! -f "$TEMP_GAME_DIR/Unturned_Headless.x86_64" ]; then
-            echo "[ERROR] Unturned_Headless.x86_64 not found in temporary directory!"
-            echo "[INFO] Looking for any Unturned files in temp directory:"
-            find "$TEMP_GAME_DIR" -name "*Unturned*" -type f 2>/dev/null || echo "[INFO] No Unturned files found"
-            exit 1
-        fi
-        
-        echo "[INFO] Copying game files from temporary location to mounted directory"
-        # 复制所有文件到挂载目录
-        cp -rf "$TEMP_GAME_DIR/"* "$GAME_DIR/"
-        
-        # 清理临时目录
-        rm -rf "$TEMP_GAME_DIR"
-        
-        echo "[INFO] Game files copied to mounted directory successfully"
-    else
-        # 非挂载目录或目录已有内容，直接安装
-        echo "[INFO] Installing Unturned (App ID: $GAME_ID) directly to: $GAME_DIR"
-        echo "[INFO] Current user: $(whoami)"
-        echo "[INFO] Current directory: $(pwd)"
-        
-        # 检查SteamCMD是否可用
-        if [ ! -f "./steamcmd.sh" ]; then
-            echo "[ERROR] steamcmd.sh not found in $STEAMCMD_DIR"
-            exit 1
-        fi
-        
-        # 运行SteamCMD安装
-        if ! ./steamcmd.sh \
-            +force_install_dir "$GAME_DIR" \
-            +login anonymous \
-            +app_update $GAME_ID validate \
-            +quit; then
-            echo "[ERROR] SteamCMD installation failed"
-            exit 1
-        fi
-        
-        echo "[INFO] SteamCMD installation completed"
-    fi
-    
-    # 检查最终安装结果
-    echo "[INFO] Final game directory contents:"
-    ls -la "$GAME_DIR"
-    
-    # 检查关键文件是否存在
-    if [ ! -f "$GAME_DIR/Unturned_Headless.x86_64" ]; then
-        echo "[ERROR] Unturned_Headless.x86_64 not found after installation!"
-        echo "[INFO] Looking for any Unturned files:"
-        find "$GAME_DIR" -name "*Unturned*" -type f 2>/dev/null || echo "[INFO] No Unturned files found"
-        echo "[INFO] Directory permissions:"
-        ls -ld "$GAME_DIR"
-        echo "[INFO] Current user: $(whoami)"
+    # 安装游戏
+    echo "[INFO] Installing Unturned (App ID: $GAME_ID)..."
+    if ! ./steamcmd.sh \
+        +force_install_dir "$GAME_DIR" \
+        +login anonymous \
+        +app_update $GAME_ID validate \
+        +quit; then
+        echo "[ERROR] SteamCMD installation failed"
         exit 1
     fi
     
