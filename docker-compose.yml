@@ -1,0 +1,31 @@
+version: '3.8'
+
+
+
+services:
+  unturned-server:
+    image: "unturned-docker:latest"
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILDPLATFORM: linux/amd64
+        TARGETPLATFORM: linux/amd64
+    ports:
+      - "27015:27015/udp"  # 游戏端口
+      - "27016:27016/udp"  # 查询端口
+    volumes:
+      - ./unturned_data:/home/steam/Unturned
+    environment:
+      SERVER_NAME: "MyUnturnedServer"
+      SERVER_TYPE: "rm4"  # 或者 "vanilla"
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    # 添加健康检查
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'Unturned_Headless' > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
