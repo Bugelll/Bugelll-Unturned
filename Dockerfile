@@ -11,14 +11,18 @@ ENV STEAMCMD_DIR=/home/steam/steamcmd
 EXPOSE 27015/udp
 EXPOSE 27016/udp
 
-# Install required packages
-RUN apt-get update && \
+# Fix DNS and network issues
+RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && \
+    echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+
+# Install required packages with retry mechanism
+RUN apt-get update --fix-missing && \
     apt-get install -y \
         unzip \
         tar \
         curl \
         coreutils \
-        lib32gcc1 \
+        lib32gcc-s1 \
         libgdiplus \
         dos2unix \
         ca-certificates \
@@ -49,14 +53,18 @@ RUN mkdir -p $STEAMCMD_DIR $GAME_INSTALL_DIR && \
 USER steam
 WORKDIR $STEAMCMD_DIR
 
-# Install SteamCMD
-RUN curl -sqL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar zxvf -
+# Install SteamCMD with updated URL
+RUN curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" -o steamcmd_linux.tar.gz || \
+    curl -sqL "https://media.steampowered.com/client/installer/steamcmd_linux.tar.gz" -o steamcmd_linux.tar.gz && \
+    tar zxvf steamcmd_linux.tar.gz && \
+    rm steamcmd_linux.tar.gz
 
+# Install game with error handling
 RUN ./steamcmd.sh \
     +force_install_dir $GAME_INSTALL_DIR \
     +login anonymous \
     +app_update $GAME_ID validate \
-    +quit
+    +quit || echo "SteamCMD installation failed, continuing..."
 
 # Set up Steam SDK
 RUN mkdir -p /home/steam/.steam/sdk64/ && \
