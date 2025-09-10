@@ -4,6 +4,26 @@ set -e
 GAME_DIR="$GAME_INSTALL_DIR"
 STEAMCMD_DIR="/home/steam/steamcmd"
 
+# 检查游戏目录是否为空（首次运行）
+if [ ! -f "$GAME_DIR/Unturned_Headless.x86_64" ]; then
+    echo "[INFO] Game directory is empty, installing Unturned for the first time..."
+    # 切换到steamcmd目录进行安装
+    cd "$STEAMCMD_DIR"
+    ./steamcmd.sh \
+        +login anonymous \
+        +force_install_dir "$GAME_DIR" \
+        +app_update 1110390 validate \
+        +quit
+    
+    # 设置Steam SDK
+    mkdir -p /home/steam/.steam/sdk64/
+    if [ -f "$GAME_DIR/linux64/steamclient.so" ]; then
+        cp -f "$GAME_DIR/linux64/steamclient.so" /home/steam/.steam/sdk64/steamclient.so
+    fi
+    
+    echo "[INFO] Unturned installation completed"
+fi
+
 # 切换到游戏目录
 cd "$GAME_DIR" || exit 1
 

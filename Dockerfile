@@ -1,4 +1,4 @@
-FROM ubuntu:bionic
+FROM ubuntu:jammy
 LABEL maintainer="Enes Sadık Özbek <es.ozbek.me>"
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -52,7 +52,6 @@ WORKDIR $STEAMCMD_DIR
 # Install SteamCMD
 RUN curl -sqL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar zxvf -
 
-# Install Unturned server
 RUN ./steamcmd.sh \
     +force_install_dir $GAME_INSTALL_DIR \
     +login anonymous \
