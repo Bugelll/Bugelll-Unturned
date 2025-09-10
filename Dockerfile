@@ -1,5 +1,5 @@
 FROM ubuntu:jammy
-LABEL maintainer="Enes Sadık Özbek <es.ozbek.me>"
+LABEL maintainer="Emqo Freeyohurt <gmail.com>"
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV GAME_INSTALL_DIR=/home/steam/Unturned
@@ -55,21 +55,6 @@ RUN curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.t
     curl -sqL "https://repo.steampowered.com/steamcmd/linux/steamcmd_linux.tar.gz" -o steamcmd_linux.tar.gz && \
     tar zxvf steamcmd_linux.tar.gz && \
     rm steamcmd_linux.tar.gz
-
-# Install game with retry mechanism
-RUN for i in 1 2 3; do \
-        ./steamcmd.sh \
-            +force_install_dir $GAME_INSTALL_DIR \
-            +login anonymous \
-            +app_update $GAME_ID validate \
-            +quit && break || sleep 10; \
-    done
-
-# Set up Steam SDK
-RUN mkdir -p /home/steam/.steam/sdk64/ && \
-    if [ -f "$GAME_INSTALL_DIR/linux64/steamclient.so" ]; then \
-        cp -f $GAME_INSTALL_DIR/linux64/steamclient.so /home/steam/.steam/sdk64/steamclient.so; \
-    fi
 
 # Copy and prepare init script
 COPY --chown=steam:steam init.sh $STEAMCMD_DIR/
