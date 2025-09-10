@@ -30,8 +30,8 @@ if [ ! -f "$GAME_DIR/Unturned_Headless.x86_64" ]; then
     
     # 运行SteamCMD安装，增加错误检查
     if ! ./steamcmd.sh \
-        +login anonymous \
         +force_install_dir "$GAME_DIR" \
+        +login anonymous \
         +app_update 1110390 validate \
         +quit; then
         echo "[ERROR] SteamCMD installation failed!"
@@ -91,8 +91,8 @@ fi
 # 检查并更新 Unturned
 echo "[INFO] Checking for Unturned updates..."
 if ! $STEAMCMD_DIR/steamcmd.sh \
-    +login anonymous \
     +force_install_dir "$GAME_DIR" \
+    +login anonymous \
     +app_update 1110390 validate \
     +quit; then
     echo "[WARNING] Update check failed, continuing with current version"
