@@ -19,6 +19,7 @@ services:
     environment:
       SERVER_NAME: "MyUnturnedServer"
       SERVER_TYPE: "rm4"  # 或者 "vanilla"
+      GAME_INSTALL_DIR: "/home/steam/Unturned"  
     restart: unless-stopped
     stdin_open: true
     tty: true
@@ -29,3 +30,4 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+
