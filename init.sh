@@ -108,8 +108,17 @@ if [ "$SERVER_TYPE" == "rm4" ]; then
 fi
 
 # 创建服务器配置目录
+# 重要：确保服务器配置目录存在，即使为空也会被使用
 mkdir -p "./Servers/$SERVER_NAME"
 echo "[INFO] Server configuration directory created: ./Servers/$SERVER_NAME"
+
+# 如果服务器配置目录为空，从 Default 目录复制基础配置（如果存在）
+if [ -d "./Servers/Default" ] && [ -z "$(ls -A ./Servers/$SERVER_NAME 2>/dev/null)" ]; then
+    echo "[INFO] Server directory is empty, copying base configuration from Default..."
+    # 复制 Default 目录的内容（但不包括 Default 目录本身）
+    cp -r ./Servers/Default/* ./Servers/$SERVER_NAME/ 2>/dev/null || true
+    echo "[INFO] Base configuration copied to ./Servers/$SERVER_NAME"
+fi
 
 # 启动服务器
 echo "[INFO] ==========================================="
@@ -129,8 +138,12 @@ fi
 SERVER_ARGS="-batchmode -nographics -logfile /dev/stdout"
 
 # 添加服务器名称参数
-if [ -n "$SERVER_NAME" ] && [ "$SERVER_NAME" != "server" ]; then
+# 重要：必须指定服务器名称，否则 Unturned 会使用 Default 目录
+if [ -n "$SERVER_NAME" ]; then
     SERVER_ARGS="$SERVER_ARGS +secureserver/$SERVER_NAME"
+    echo "[INFO] Server will use configuration from: ./Servers/$SERVER_NAME"
+else
+    echo "[WARNING] SERVER_NAME not set, server will use Default configuration"
 fi
 
 # 显示启动信息
