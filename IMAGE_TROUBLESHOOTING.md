@@ -62,34 +62,7 @@ docker pull docker.io/emqo/bugelll-unturned:latest 2>&1 | grep -i "error\|not fo
 
 ## 解决方案
 
-### 方案 1：使用本地构建（最可靠）
-
-如果镜像不存在或无法访问，使用本地构建：
-
-```bash
-# 1. 修改 docker-compose.yml
-# 将 image 改为 build:
-services:
-  Bugelll-Unturned-1:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: bugelll-unturned:latest
-    # ... 其他配置
-
-# 2. 构建镜像
-docker compose build
-
-# 3. 启动容器
-docker compose up -d
-```
-
-**优点**：
-- 不依赖网络
-- 使用最新代码
-- 完全可控
-
-### 方案 2：检查是否有其他镜像源
+### 方案 1：检查是否有其他镜像源
 
 ```bash
 # 搜索相关镜像
@@ -100,7 +73,7 @@ docker search unturned
 docker pull emqo/bugelll-unturned:20251201064718
 ```
 
-### 方案 3：直接使用 Docker Hub（绕过所有加速器）
+### 方案 2：直接使用 Docker Hub（绕过所有加速器）
 
 ```bash
 # 1. 临时禁用所有镜像加速器
@@ -157,14 +130,7 @@ docker compose up -d
    ./check-image.sh
    ```
 
-2. **如果镜像不存在，使用本地构建**：
-   ```bash
-   # 修改 docker-compose.yml 使用 build
-   docker compose build
-   docker compose up -d
-   ```
-
-3. **如果镜像存在但无法拉取，直接使用 Docker Hub**：
+2. **如果镜像存在但无法拉取，直接使用 Docker Hub**：
    ```bash
    # 禁用加速器
    echo '{"registry-mirrors": []}' | sudo tee /etc/docker/daemon.json
@@ -174,7 +140,7 @@ docker compose up -d
 
 ## 长期解决方案
 
-1. **使用本地构建**：最可靠，不依赖外部镜像
-2. **自建镜像仓库**：如果有自己的 Docker Registry
-3. **使用 CI/CD 自动构建和推送**：确保镜像始终可用
+1. **自建镜像仓库**：如果有自己的 Docker Registry
+2. **使用 CI/CD 自动构建和推送**：确保镜像始终可用
+3. **配置可靠的镜像加速器**：选择稳定且支持所需镜像的加速器
 

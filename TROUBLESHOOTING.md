@@ -99,24 +99,25 @@ docker compose up -d
    docker compose up -d
    ```
 
-#### 方案 4：使用本地构建（如果远程拉取持续失败）
+#### 方案 4：检查网络和镜像加速器配置
 
-如果远程镜像拉取持续失败，可以临时改为本地构建：
+如果远程镜像拉取持续失败：
 
-1. 修改 `docker-compose.yml`，将 `image` 改为 `build`：
-   ```yaml
-   services:
-     Bugelll-Unturned-1:
-       build:
-         context: .
-         dockerfile: Dockerfile
-       image: bugelll-unturned:latest
+1. **检查网络连接**：
+   ```bash
+   curl -I https://hub.docker.com
+   ping hub.docker.com
    ```
 
-2. 本地构建并启动：
+2. **检查镜像加速器配置**：
    ```bash
-   docker compose build
-   docker compose up -d
+   cat /etc/docker/daemon.json
+   ```
+
+3. **尝试不同的镜像加速器**：
+   - 阿里云：https://registry.cn-hangzhou.aliyuncs.com
+   - 中科大：https://docker.mirrors.ustc.edu.cn
+   - 网易：https://hub-mirror.c.163.com
    ```
 
 ## 容器启动失败
