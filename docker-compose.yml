@@ -13,7 +13,7 @@ services:
       - SERVER_NAME=Bugelll-Unturned-1
       - GAME_DIR=/home/steam/Unturned
       - STEAMCMD_DIR=/home/steam/steamcmd
-      - TZ=UTC
+      - TZ=Asia/Shanghai
     stdin_open: true
     tty: true
     # Resource limits
@@ -56,7 +56,7 @@ services:
       - SERVER_NAME=Bugelll-Unturned-2
       - GAME_DIR=/home/steam/Unturned
       - STEAMCMD_DIR=/home/steam/steamcmd
-      - TZ=UTC
+      - TZ=Asia/Shanghai
     stdin_open: true
     tty: true
     # Resource limits

@@ -28,6 +28,8 @@ RUN apt-get update --fix-missing && \
         procps \
         tzdata && \
     locale-gen en_US.UTF-8 && \
+    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    echo "Asia/Shanghai" > /etc/timezone && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
     which unzip && which tar && which curl
