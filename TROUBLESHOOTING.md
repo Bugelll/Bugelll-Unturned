@@ -4,8 +4,12 @@
 
 ### 问题症状
 
+常见错误包括：
 ```
 short read: expected 29536798 bytes but got 0: unexpected EOF
+429 Too Many Requests
+403 Forbidden
+failed to resolve reference
 ```
 
 ### 原因
@@ -13,10 +17,45 @@ short read: expected 29536798 bytes but got 0: unexpected EOF
 1. 网络连接不稳定
 2. Docker Hub 镜像仓库问题
 3. Docker 镜像缓存损坏
+4. **镜像加速器限制**：某些镜像加速器不支持特定镜像或请求过于频繁（429/403 错误）
+5. **镜像不存在**：镜像可能不存在于 Docker Hub 或加速器中
 
 ### 解决方案
 
-#### 方案 1：清理缓存并重试拉取（推荐）
+#### 方案 1：直接使用 Docker Hub（推荐，解决 429/403 错误）
+
+如果遇到 429 Too Many Requests 或 403 Forbidden 错误，通常是镜像加速器的问题。可以临时禁用加速器，直接使用 Docker Hub：
+
+```bash
+# 1. 备份当前配置
+sudo cp /etc/docker/daemon.json /etc/docker/daemon.json.bak 2>/dev/null || true
+
+# 2. 临时禁用镜像加速器（注释掉或删除 registry-mirrors）
+sudo nano /etc/docker/daemon.json
+# 将 registry-mirrors 注释掉或删除，或者改为空数组：
+# {
+#   "registry-mirrors": []
+# }
+
+# 3. 重启 Docker 服务
+sudo systemctl restart docker
+
+# 4. 直接拉取镜像（使用 Docker Hub）
+docker pull emqo/bugelll-unturned:latest
+
+# 5. 启动容器
+docker compose up -d
+```
+
+**或者临时使用 Docker Hub 官方地址**：
+
+```bash
+# 直接指定使用 Docker Hub
+docker pull docker.io/emqo/bugelll-unturned:latest
+docker compose up -d
+```
+
+#### 方案 2：清理缓存并重试拉取
 
 如果必须使用远程镜像：
 
@@ -27,12 +66,15 @@ docker system prune -a --volumes
 # 清理特定镜像
 docker rmi emqo/bugelll-unturned:latest 2>/dev/null || true
 
+# 等待一段时间（避免 429 错误）
+sleep 60
+
 # 重试拉取
 docker compose pull
 docker compose up -d
 ```
 
-#### 方案 2：使用镜像加速器
+#### 方案 3：使用镜像加速器（如果方案 1 失败）
 
 如果在中国大陆，可以配置 Docker 镜像加速器：
 
@@ -57,7 +99,7 @@ docker compose up -d
    docker compose up -d
    ```
 
-#### 方案 3：使用本地构建（如果远程拉取持续失败）
+#### 方案 4：使用本地构建（如果远程拉取持续失败）
 
 如果远程镜像拉取持续失败，可以临时改为本地构建：
 
