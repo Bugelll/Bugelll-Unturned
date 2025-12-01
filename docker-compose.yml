@@ -1,44 +1,51 @@
 version: '3.8'
 
 services:
-  unturned-server:
-    image: "unturned-docker:latest"
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        BUILDPLATFORM: linux/amd64
-        TARGETPLATFORM: linux/amd64
-    
-    # 端口映射配置
-    # 格式: "宿主机端口:容器端口/协议"
-    # 可以根据需要修改宿主机端口，容器端口通常保持27015-27016
+  Bugelll-Unturned-1:
+    image: emqo/bugelll-unturned:latest
+    container_name: Bugelll-Unturned-1
+    restart: unless-stopped
     ports:
-      - "27015:27015/udp"   # 游戏主端口
-      - "27016:27016/udp"   # 查询端口
-    
-    # 数据卷挂载 - 持久化游戏数据
-    # 确保宿主机目录权限为 1000:1000 (steam用户)
+      - "34567:34567/udp"
+      - "34568:34568/udp"
     volumes:
-      - ./unturned_data:/home/steam/Unturned
-    
-    # 环境变量配置
+      - ./UnturnedData1:/home/steam/Unturned
     environment:
-      SERVER_NAME: "MyUnturnedServer"      # 服务器名称
-      SERVER_TYPE: "rm4"                   # 服务器类型: rm4( RocketMod 4) / rm5 / empty(原版)
-      GAME_INSTALL_DIR: "/home/steam/Unturned"
-      GAME_ID: "1110390"                    # Unturned App ID
-    
-    # 容器配置
-    restart: unless-stopped                 # 自动重启策略
-    stdin_open: true                        # 保持stdin开放，支持交互
-    tty: true                               # 分配伪终端
-    
-    # 健康检查 - 确保服务器正常运行
-    healthcheck:
-      test: ["CMD-SHELL", "pgrep -f 'Unturned_Headless' > /dev/null || exit 1"]
-      interval: 30s                         # 检查间隔
-      timeout: 10s                          # 超时时间
-      retries: 3                            # 重试次数
-      start_period: 60s                     # 启动宽限期
+      - SERVER_TYPE=rm4
+      - SERVER_NAME=Bugelll-Unturned-1  # 重要：必须设置，否则会使用 Default 目录
+      - GAME_DIR=/home/steam/Unturned
+      - STEAMCMD_DIR=/home/steam/steamcmd
+    stdin_open: true
+    tty: true
+    networks:
+      unturned-net:
+        ipv4_address: 172.20.0.2
+
+  Bugelll-Unturned-2:
+    image: emqo/bugelll-unturned:latest
+    container_name: Bugelll-Unturned-2
+    restart: unless-stopped
+    ports:
+      - "35678:35678/udp"
+      - "35679:35679/udp"
+    volumes:
+      - ./UnturnedData2:/home/steam/Unturned
+    environment:
+      - SERVER_TYPE=rm4
+      - SERVER_NAME=Bugelll-Unturned-2  # 重要：必须设置，否则会使用 Default 目录
+      - GAME_DIR=/home/steam/Unturned
+      - STEAMCMD_DIR=/home/steam/steamcmd
+    stdin_open: true
+    tty: true
+    networks:
+      unturned-net:
+        ipv4_address: 172.20.0.3
+
+networks:
+  unturned-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
 
