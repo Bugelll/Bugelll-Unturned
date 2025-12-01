@@ -16,17 +16,7 @@ short read: expected 29536798 bytes but got 0: unexpected EOF
 
 ### 解决方案
 
-#### 方案 1：使用本地构建（推荐）
-
-当前 `docker-compose.yml` 已配置为本地构建，无需拉取远程镜像：
-
-```bash
-cd /data/Unturned
-docker compose build
-docker compose up -d
-```
-
-#### 方案 2：清理缓存并重试拉取
+#### 方案 1：清理缓存并重试拉取（推荐）
 
 如果必须使用远程镜像：
 
@@ -42,7 +32,7 @@ docker compose pull
 docker compose up -d
 ```
 
-#### 方案 3：使用镜像加速器
+#### 方案 2：使用镜像加速器
 
 如果在中国大陆，可以配置 Docker 镜像加速器：
 
@@ -64,6 +54,26 @@ docker compose up -d
 3. 重新拉取镜像：
    ```bash
    docker compose pull
+   docker compose up -d
+   ```
+
+#### 方案 3：使用本地构建（如果远程拉取持续失败）
+
+如果远程镜像拉取持续失败，可以临时改为本地构建：
+
+1. 修改 `docker-compose.yml`，将 `image` 改为 `build`：
+   ```yaml
+   services:
+     Bugelll-Unturned-1:
+       build:
+         context: .
+         dockerfile: Dockerfile
+       image: bugelll-unturned:latest
+   ```
+
+2. 本地构建并启动：
+   ```bash
+   docker compose build
    docker compose up -d
    ```
 
