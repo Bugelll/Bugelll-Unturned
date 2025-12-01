@@ -70,10 +70,4 @@ WORKDIR $GAME_INSTALL_DIR
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
     CMD pgrep -f "Unturned_Headless" > /dev/null || exit 1
 
-# Security: Run as non-root user
-USER steam
-
-# Set working directory
-WORKDIR $GAME_INSTALL_DIR
-
 ENTRYPOINT ["../steamcmd/init.sh"]
