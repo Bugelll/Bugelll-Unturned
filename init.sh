@@ -1,0 +1,144 @@
+#!/bin/bash
+set -e
+
+# ============================================
+# Unturned 服务器初始化脚本
+# ============================================
+
+GAME_DIR="${GAME_INSTALL_DIR:-/home/steam/Unturned}"
+STEAMCMD_DIR="${STEAMCMD_DIR:-/home/steam/steamcmd}"
+SERVER_TYPE="${SERVER_TYPE:-empty}"
+SERVER_NAME="${SERVER_NAME:-server}"
+
+echo "[INFO] ==========================================="
+echo "[INFO] Unturned Server Initialization"
+echo "[INFO] ==========================================="
+echo "[INFO] Game directory: $GAME_DIR"
+echo "[INFO] SteamCMD directory: $STEAMCMD_DIR"
+echo "[INFO] Server name: $SERVER_NAME"
+echo "[INFO] Server type: $SERVER_TYPE"
+echo "[INFO] ==========================================="
+
+# 确保游戏目录存在并设置权限
+if ! mkdir -p "$GAME_DIR" 2>/dev/null; then
+    echo "[ERROR] Failed to create game directory: $GAME_DIR"
+    exit 1
+fi
+
+# 设置目录权限（如果可能）
+if [ -w "$(dirname "$GAME_DIR")" ]; then
+    chown steam:steam "$GAME_DIR" 2>/dev/null || true
+fi
+
+# 检查游戏是否已安装
+if [ ! -f "$GAME_DIR/Unturned_Headless.x86_64" ]; then
+    echo "[INFO] Game not found, installing Unturned for the first time..."
+    
+    # 切换到SteamCMD目录
+    cd "$STEAMCMD_DIR"
+    
+    # 安装游戏
+    echo "[INFO] Installing Unturned (App ID: $GAME_ID)..."
+    if ! ./steamcmd.sh \
+        +force_install_dir "$GAME_DIR" \
+        +login anonymous \
+        +app_update $GAME_ID validate \
+        +quit; then
+        echo "[ERROR] SteamCMD installation failed"
+        exit 1
+    fi
+    
+    echo "[INFO] Installation completed successfully"
+else
+    echo "[INFO] Game found, checking for updates..."
+    
+    # 切换到SteamCMD目录进行更新
+    cd "$STEAMCMD_DIR"
+    
+    # 更新游戏
+    echo "[INFO] Updating Unturned..."
+    if ! ./steamcmd.sh \
+        +force_install_dir "$GAME_DIR" \
+        +login anonymous \
+        +app_update $GAME_ID validate \
+        +quit; then
+        echo "[WARNING] Update failed, continuing with current version"
+    fi
+fi
+
+# 设置Steam SDK
+mkdir -p /home/steam/.steam/sdk64/
+if [ -f "$GAME_DIR/linux64/steamclient.so" ]; then
+    cp -f "$GAME_DIR/linux64/steamclient.so" /home/steam/.steam/sdk64/steamclient.so
+    echo "[INFO] Steam SDK configured"
+fi
+
+# 切换到游戏目录
+cd "$GAME_DIR" || exit 1
+
+echo "[INFO] Changed to game directory: $(pwd)"
+
+# 提高文件描述符限制
+ulimit -n 2048
+export TERM=xterm
+
+# 设置插件库路径
+if [ -d "./Unturned_Headless_Data" ]; then
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$(pwd)/Unturned_Headless_Data/Plugins/x86_64/"
+    echo "[INFO] Set LD_LIBRARY_PATH for Unturned_Headless_Data"
+else
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$(pwd)/Unturned_Headless/Plugins/x86_64/"
+    echo "[INFO] Set LD_LIBRARY_PATH for Unturned_Headless"
+fi
+
+# 确保可执行权限
+chmod +x ./Unturned_Headless.x86_64
+
+# RocketMod 安装（如果需要）
+if [ "$SERVER_TYPE" == "rm4" ]; then
+    echo "[INFO] Setting up RocketMod..."
+    if [ -d "./Extras/Rocket.Unturned" ] && [ ! -d "./Modules/Rocket.Unturned" ]; then
+        echo "[INFO] Installing RocketMod..."
+        mkdir -p "./Modules"
+        cp -rf "./Extras/Rocket.Unturned/" "./Modules/"
+        echo "[INFO] RocketMod installed successfully"
+    elif [ ! -d "./Extras/Rocket.Unturned" ]; then
+        echo "[WARNING] RocketMod requested but Extras/Rocket.Unturned not found"
+    fi
+fi
+
+# 创建服务器配置目录
+mkdir -p "./Servers/$SERVER_NAME"
+echo "[INFO] Server configuration directory created: ./Servers/$SERVER_NAME"
+
+# 启动服务器
+echo "[INFO] ==========================================="
+echo "[INFO] Starting Unturned server"
+echo "[INFO] Server name: $SERVER_NAME"
+echo "[INFO] Server type: ${SERVER_TYPE:-vanilla}"
+echo "[INFO] ==========================================="
+
+# 验证可执行文件存在
+if [ ! -f "./Unturned_Headless.x86_64" ]; then
+    echo "[ERROR] Unturned_Headless.x86_64 not found!"
+    echo "[ERROR] Please check game installation."
+    exit 1
+fi
+
+# 构建启动参数
+SERVER_ARGS="-batchmode -nographics -logfile /dev/stdout"
+
+# 添加服务器名称参数
+if [ -n "$SERVER_NAME" ] && [ "$SERVER_NAME" != "server" ]; then
+    SERVER_ARGS="$SERVER_ARGS +secureserver/$SERVER_NAME"
+fi
+
+# 显示启动信息
+echo "[INFO] Executable: ./Unturned_Headless.x86_64"
+echo "[INFO] Arguments: $SERVER_ARGS"
+echo "[INFO] Working directory: $(pwd)"
+echo "[INFO] ==========================================="
+echo ""
+
+# 启动服务器（使用exec替换当前进程）
+exec ./Unturned_Headless.x86_64 $SERVER_ARGS

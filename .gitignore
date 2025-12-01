@@ -1,0 +1,23 @@
+# IDE
+.idea/**
+.vscode/**
+*.swp
+*.swo
+*~
+
+# Docker
+unturned_data/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.tar.gz
+steamcmd_linux.tar.gz
+
+# Temporary files
+tmp/
+temp/
+*.tmp
