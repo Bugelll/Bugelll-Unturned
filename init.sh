@@ -1,5 +1,17 @@
 #!/bin/bash
-set -e
+set -euo pipefail
+
+# Signal handling for graceful shutdown
+cleanup() {
+    echo "[INFO] Received shutdown signal, stopping server..."
+    if [ -n "${SERVER_PID:-}" ]; then
+        kill -TERM "$SERVER_PID" 2>/dev/null || true
+        wait "$SERVER_PID" 2>/dev/null || true
+    fi
+    exit 0
+}
+
+trap cleanup SIGTERM SIGINT
 
 # ============================================
 # Unturned 服务器初始化脚本
@@ -153,5 +165,9 @@ echo "[INFO] Working directory: $(pwd)"
 echo "[INFO] ==========================================="
 echo ""
 
-# 启动服务器（使用exec替换当前进程）
-exec ./Unturned_Headless.x86_64 $SERVER_ARGS
+# Start server in background to allow signal handling
+./Unturned_Headless.x86_64 $SERVER_ARGS &
+SERVER_PID=$!
+
+# Wait for server process
+wait $SERVER_PID

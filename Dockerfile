@@ -1,18 +1,19 @@
 FROM ubuntu:jammy
 LABEL maintainer="Emqo Freeyohurt <gmail.com>"
+LABEL org.opencontainers.image.description="Unturned game server with RocketMod support"
+LABEL org.opencontainers.image.source="https://github.com/Bugelll/Bugelll-Unturned"
 
-ENV DEBIAN_FRONTEND=noninteractive
-ENV GAME_INSTALL_DIR=/home/steam/Unturned
-ENV GAME_ID=1110390
-ENV SERVER_NAME=server
-ENV STEAM_USERNAME=anonymous
-ENV STEAMCMD_DIR=/home/steam/steamcmd
+ENV DEBIAN_FRONTEND=noninteractive \
+    GAME_INSTALL_DIR=/home/steam/Unturned \
+    GAME_ID=1110390 \
+    SERVER_NAME=server \
+    STEAM_USERNAME=anonymous \
+    STEAMCMD_DIR=/home/steam/steamcmd \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8
 
-# 注意：端口映射在 docker-compose.yml 中配置，不在此处声明
-# 这样可以灵活配置不同的端口映射
-
-# Install required packages with better error handling
-# 合并RUN命令以减少镜像层数，提高构建效率
+# Install required packages in a single layer for better caching
 RUN apt-get update --fix-missing && \
     apt-get install -y --no-install-recommends \
         unzip \
@@ -24,17 +25,12 @@ RUN apt-get update --fix-missing && \
         dos2unix \
         ca-certificates \
         locales \
-        procps && \
+        procps \
+        tzdata && \
+    locale-gen en_US.UTF-8 && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
-    # 验证关键工具安装
     which unzip && which tar && which curl
-
-# Set up locale to fix SteamCMD warnings
-RUN locale-gen en_US.UTF-8
-ENV LANG=en_US.UTF-8
-ENV LANGUAGE=en_US:en
-ENV LC_ALL=en_US.UTF-8
 
 # Add Steam user
 RUN adduser \
@@ -69,9 +65,15 @@ RUN dos2unix $STEAMCMD_DIR/init.sh && chmod +x $STEAMCMD_DIR/init.sh
 
 WORKDIR $GAME_INSTALL_DIR
 
-# Health check - 检查Unturned进程是否运行
-# 使用procps包中的pgrep命令（已在依赖中安装）
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+# Health check - Check if Unturned process is running
+# Uses pgrep from procps package (already installed)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
     CMD pgrep -f "Unturned_Headless" > /dev/null || exit 1
+
+# Security: Run as non-root user
+USER steam
+
+# Set working directory
+WORKDIR $GAME_INSTALL_DIR
 
 ENTRYPOINT ["../steamcmd/init.sh"]

@@ -10,11 +10,34 @@ services:
       - ./UnturnedData1:/home/steam/Unturned
     environment:
       - SERVER_TYPE=rm4
-      - SERVER_NAME=Bugelll-Unturned-1  # 重要：必须设置，否则会使用 Default 目录
+      - SERVER_NAME=Bugelll-Unturned-1
       - GAME_DIR=/home/steam/Unturned
       - STEAMCMD_DIR=/home/steam/steamcmd
+      - TZ=UTC
     stdin_open: true
     tty: true
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    tmpfs:
+      - /tmp
+      - /run
     networks:
       unturned-net:
         ipv4_address: 172.20.0.2
@@ -30,11 +53,34 @@ services:
       - ./UnturnedData2:/home/steam/Unturned
     environment:
       - SERVER_TYPE=rm4
-      - SERVER_NAME=Bugelll-Unturned-2  # 重要：必须设置，否则会使用 Default 目录
+      - SERVER_NAME=Bugelll-Unturned-2
       - GAME_DIR=/home/steam/Unturned
       - STEAMCMD_DIR=/home/steam/steamcmd
+      - TZ=UTC
     stdin_open: true
     tty: true
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    tmpfs:
+      - /tmp
+      - /run
     networks:
       unturned-net:
         ipv4_address: 172.20.0.3
