@@ -20,8 +20,10 @@ trap cleanup SIGTERM SIGINT
 # 设置时区（优先使用环境变量，否则使用默认值）
 export TZ="${TZ:-Asia/Shanghai}"
 if [ -f "/usr/share/zoneinfo/$TZ" ]; then
+    # 尝试设置时区（steam 用户可能没有权限写入 /etc/timezone，但 TZ 环境变量已足够）
     ln -sf "/usr/share/zoneinfo/$TZ" /etc/localtime 2>/dev/null || true
-    echo "$TZ" > /etc/timezone 2>/dev/null || true
+    # 尝试写入 /etc/timezone（如果失败也不影响，TZ 环境变量已设置）
+    echo "$TZ" > /etc/timezone 2>/dev/null || echo "[INFO] Using TZ environment variable (timezone file write skipped)"
     echo "[INFO] Timezone set to: $TZ"
 else
     echo "[WARNING] Timezone file not found: /usr/share/zoneinfo/$TZ"
@@ -163,12 +165,22 @@ echo "[INFO] Changed to game directory: $(pwd)"
 ulimit -n 2048
 export TERM=xterm
 
-# 设置插件库路径
+# 设置插件库路径（处理未设置的 LD_LIBRARY_PATH）
 if [ -d "./Unturned_Headless_Data" ]; then
-    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$(pwd)/Unturned_Headless_Data/Plugins/x86_64/"
+    plugin_path="$(pwd)/Unturned_Headless_Data/Plugins/x86_64/"
+    if [ -n "${LD_LIBRARY_PATH:-}" ]; then
+        export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$plugin_path"
+    else
+        export LD_LIBRARY_PATH="$plugin_path"
+    fi
     echo "[INFO] Set LD_LIBRARY_PATH for Unturned_Headless_Data"
 else
-    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$(pwd)/Unturned_Headless/Plugins/x86_64/"
+    plugin_path="$(pwd)/Unturned_Headless/Plugins/x86_64/"
+    if [ -n "${LD_LIBRARY_PATH:-}" ]; then
+        export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$plugin_path"
+    else
+        export LD_LIBRARY_PATH="$plugin_path"
+    fi
     echo "[INFO] Set LD_LIBRARY_PATH for Unturned_Headless"
 fi
 
