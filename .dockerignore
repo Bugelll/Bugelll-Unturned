@@ -1,0 +1,40 @@
+# Git
+.git
+.gitignore
+.gitattributes
+.github
+
+# Documentation
+*.md
+!README.md
+LICENSE
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+docker-compose.*.yml
+
+# Data directories
+UnturnedData*/
+unturned_data*/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,115 @@
+name: Bugelll Unturned Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  IMAGE_NAME: emqo/bugelll-unturned
+  REGISTRY: docker.io
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Get version and timestamp
+      id: version
+      run: |
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+        else
+          VERSION=$(date +'%Y%m%d%H%M%S')
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+        echo "TIME_TAG=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      id: build
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: |
+          ${{ env.IMAGE_NAME }}:latest
+          ${{ env.IMAGE_NAME }}:${{ env.TIME_TAG }}
+          ${{ env.IMAGE_NAME }}:${{ env.VERSION }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Export Docker image to tar
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+      run: |
+        # Pull the image we just pushed
+        docker pull ${{ env.IMAGE_NAME }}:${{ env.TIME_TAG }}
+        # Save image to tar file
+        docker save ${{ env.IMAGE_NAME }}:${{ env.TIME_TAG }} -o bugelll-unturned-${{ env.TIME_TAG }}.tar
+        # Compress the tar file
+        gzip bugelll-unturned-${{ env.TIME_TAG }}.tar
+        # Show file size
+        ls -lh bugelll-unturned-${{ env.TIME_TAG }}.tar.gz
+        echo "IMAGE_FILE=bugelll-unturned-${{ env.TIME_TAG }}.tar.gz" >> $GITHUB_ENV
+
+    - name: Create GitHub Release
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Release ${{ env.VERSION }}
+        tag_name: v${{ env.TIME_TAG }}
+        body: |
+          ## Bugelll Unturned Docker Image Release
+          
+          **Version:** ${{ env.VERSION }}
+          **Build Time:** ${{ env.TIME_TAG }}
+          **Commit:** ${{ github.sha }}
+          
+          ### Docker Images
+          
+          - `${{ env.IMAGE_NAME }}:latest`
+          - `${{ env.IMAGE_NAME }}:${{ env.TIME_TAG }}`
+          - `${{ env.IMAGE_NAME }}:${{ env.VERSION }}`
+          
+          ### Usage
+          
+          ```bash
+          docker pull ${{ env.IMAGE_NAME }}:latest
+          ```
+          
+          ### Load from Release
+          
+          ```bash
+          # Download and load the image
+          docker load < bugelll-unturned-${{ env.TIME_TAG }}.tar.gz
+          ```
+          
+          ### Changes
+          
+          See [commit history](https://github.com/${{ github.repository }}/compare/${{ github.event.before }}...${{ github.sha }})
+        files: bugelll-unturned-${{ env.TIME_TAG }}.tar.gz
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+
