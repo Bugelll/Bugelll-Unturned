@@ -29,6 +29,7 @@ fi
 
 GAME_DIR="${GAME_INSTALL_DIR:-/home/steam/Unturned}"
 STEAMCMD_DIR="${STEAMCMD_DIR:-/home/steam/steamcmd}"
+GAME_ID="${GAME_ID:-1110390}"
 SERVER_TYPE="${SERVER_TYPE:-empty}"
 SERVER_NAME="${SERVER_NAME:-server}"
 
@@ -52,40 +53,98 @@ if [ -w "$(dirname "$GAME_DIR")" ]; then
     chown steam:steam "$GAME_DIR" 2>/dev/null || true
 fi
 
+# SteamCMD 更新/安装函数（带重试机制）
+update_game() {
+    local max_retries=3
+    local retry_delay=5
+    local attempt=1
+    
+    cd "$STEAMCMD_DIR" || return 1
+    
+    while [ $attempt -le $max_retries ]; do
+        echo "[INFO] Attempt $attempt/$max_retries: Updating Unturned..."
+        
+        # 清理 SteamCMD 临时文件（可能解决 0x406 错误）
+        rm -rf /home/steam/Steam/appcache/* 2>/dev/null || true
+        rm -rf /home/steam/Steam/logs/* 2>/dev/null || true
+        
+        # 检查磁盘空间（至少需要 2GB）
+        if command -v df >/dev/null 2>&1; then
+            local available_space=$(df -k "$GAME_DIR" 2>/dev/null | tail -1 | awk '{print $4}')
+            if [ -n "$available_space" ] && [ "$available_space" -lt 2097152 ]; then
+                echo "[WARNING] Low disk space: ${available_space}KB available (recommended: 2GB+)"
+            fi
+        fi
+        
+        # 执行更新
+        if ./steamcmd.sh \
+            +force_install_dir "$GAME_DIR" \
+            +login anonymous \
+            +app_update $GAME_ID validate \
+            +quit 2>&1 | tee /tmp/steamcmd_update.log; then
+            # 检查更新是否真的成功（检查错误代码）
+            if grep -q "Error!" /tmp/steamcmd_update.log; then
+                echo "[WARNING] SteamCMD reported errors, but continuing..."
+                # 检查是否是致命错误
+                if grep -q "0x406\|0x402\|0x403" /tmp/steamcmd_update.log; then
+                    echo "[WARNING] Steam error detected (0x406/0x402/0x403), will retry..."
+                    if [ $attempt -lt $max_retries ]; then
+                        echo "[INFO] Waiting ${retry_delay} seconds before retry..."
+                        sleep $retry_delay
+                        retry_delay=$((retry_delay * 2))  # 指数退避
+                        attempt=$((attempt + 1))
+                        continue
+                    else
+                        echo "[ERROR] Update failed after $max_retries attempts"
+                        echo "[INFO] Continuing with existing game files..."
+                        return 1
+                    fi
+                else
+                    # 非致命错误，继续
+                    echo "[INFO] Non-critical errors detected, continuing..."
+                    return 0
+                fi
+            else
+                echo "[INFO] Update completed successfully"
+                return 0
+            fi
+        else
+            echo "[WARNING] SteamCMD command failed (exit code: $?)"
+            if [ $attempt -lt $max_retries ]; then
+                echo "[INFO] Waiting ${retry_delay} seconds before retry..."
+                sleep $retry_delay
+                retry_delay=$((retry_delay * 2))
+                attempt=$((attempt + 1))
+            else
+                echo "[ERROR] Update failed after $max_retries attempts"
+                echo "[INFO] Continuing with existing game files..."
+                return 1
+            fi
+        fi
+    done
+    
+    return 1
+}
+
 # 检查游戏是否已安装
 if [ ! -f "$GAME_DIR/Unturned_Headless.x86_64" ]; then
     echo "[INFO] Game not found, installing Unturned for the first time..."
     
-    # 切换到SteamCMD目录
-    cd "$STEAMCMD_DIR"
-    
-    # 安装游戏
-    echo "[INFO] Installing Unturned (App ID: $GAME_ID)..."
-    if ! ./steamcmd.sh \
-        +force_install_dir "$GAME_DIR" \
-        +login anonymous \
-        +app_update $GAME_ID validate \
-        +quit; then
-        echo "[ERROR] SteamCMD installation failed"
-        exit 1
+    if ! update_game; then
+        echo "[ERROR] SteamCMD installation failed after retries"
+        echo "[INFO] Checking if game files exist anyway..."
+        if [ ! -f "$GAME_DIR/Unturned_Headless.x86_64" ]; then
+            echo "[ERROR] Game installation incomplete, cannot start server"
+            exit 1
+        else
+            echo "[INFO] Game files found despite installation errors, continuing..."
+        fi
+    else
+        echo "[INFO] Installation completed successfully"
     fi
-    
-    echo "[INFO] Installation completed successfully"
 else
     echo "[INFO] Game found, checking for updates..."
-    
-    # 切换到SteamCMD目录进行更新
-    cd "$STEAMCMD_DIR"
-    
-    # 更新游戏
-    echo "[INFO] Updating Unturned..."
-    if ! ./steamcmd.sh \
-        +force_install_dir "$GAME_DIR" \
-        +login anonymous \
-        +app_update $GAME_ID validate \
-        +quit; then
-        echo "[WARNING] Update failed, continuing with current version"
-    fi
+    update_game || echo "[WARNING] Update failed, continuing with current version"
 fi
 
 # 设置Steam SDK
